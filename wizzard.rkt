@@ -24,11 +24,12 @@
          (descriptions (map describe-path edges)))
     (apply append descriptions)))
 
-(define (describe-objects loc objs obj-locs)
-  (define (objects-at loc objs obj-locs)
+(define (objects-at loc objs obj-locs)
     (define (there? obj)
       (eq? (cadr (assoc obj obj-locs)) loc))
     (filter there? objs))
+
+(define (describe-objects loc objs obj-locs)
   (define (describe-object obj)
     `(you see a ,obj on the floor.))
   (let* ((objs-here (objects-at loc objs obj-locs))
@@ -40,4 +41,21 @@
           (describe-paths *location* *edges*)
           (describe-objects *location* *objects* *object-locations*)))
 
+(define (walk direction)
+  (let ((next (findf
+               (lambda (edge) (eq? direction (cadr edge)))
+               (cdr (assoc *location* *edges*)))))
+    (if next
+        (begin
+          (set! *location* (car next))
+          (look))
+        '(you cant go there)
+    )))
 
+(define (pickup object)
+  (if (member object (objects-at *location* *objects* *object-locations*))
+      (set! *object-locations* (cons (list object 'body) *object-locations*))
+      '(you cant get that)))
+
+(define (inventory)
+  (objects-at 'body *objects* *object-locations*))
