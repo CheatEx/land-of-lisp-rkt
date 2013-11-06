@@ -59,3 +59,24 @@
 
 (define (inventory)
   (objects-at 'body *objects* *object-locations*))
+
+(define (say-hello)
+  (display "Please enter your name")
+  (let ([name (read-line)])
+    (display "Nice to meet you, ")
+    (display name)))
+
+(define (game-read)
+  (let* (
+         [str ((open-input-string (string-append "(" (read-line) ")")))]
+         [cmd (read str)])
+    (define (quote-it s)
+      (list 'quote s))
+    (cons (car cmd) (map quote-it (cdr cmd)))))
+
+(define (game-repl)
+  (let ([cmd (game-read)])
+    (unless (eq? cmd 'quit)
+      (game-print (game-eval cmd))
+      (game-repl))))
+
