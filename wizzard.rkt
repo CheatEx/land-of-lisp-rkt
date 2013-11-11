@@ -1,4 +1,5 @@
 #lang racket
+
 (define *nodes*
   '((living-room (you are in the living-room. a wizard is snoring loudly on the couch.))
     (garden (you are in a beautiful garden. there is a well in front of you.))
@@ -13,6 +14,8 @@
                              (bucket living-room)
                              (chain garden)
                              (frog garden)))
+
+(define *commands* '(look walk pickup inventory))
 
 (define (describe-location location nodes)
   (cadr (assoc location nodes)))
@@ -67,16 +70,49 @@
     (display name)))
 
 (define (game-read)
-  (let* (
-         [str ((open-input-string (string-append "(" (read-line) ")")))]
+  (let* ([str (open-input-string (string-append "(" (read-line) ")"))]
          [cmd (read str)])
     (define (quote-it s)
       (list 'quote s))
     (cons (car cmd) (map quote-it (cdr cmd)))))
+
+(define (tweak-text lst caps lit)
+  (if (not (null? lst))
+    (let ([item (car lst)]
+          [rest (cdr lst)])
+      (cond
+        [(eq? item #\space) (cons item (tweak-text rest caps lit))]
+        [(member item '(#\! #\? #\.)) (cons item (tweak-text rest #t lit))]
+        [(eq? item #\") (tweak-text rest caps (not lit))]
+        [lit (cons item (tweak-text rest #f lit))]
+        [caps (cons (char-upcase item) (tweak-text rest #f lit))]
+        [#t (cons (char-downcase item) (tweak-text rest #f #f))]))
+    null))
+
+(define (write-to-string v)
+  (let ([p (open-output-string)])
+    (display v p)
+    (get-output-string p)))
+
+(define (trim str)
+  (regexp-replace* #px"^(\\(|\\)|\\s)+|(\\(|\\)|\\s)+$" str ""))
+
+(define (game-print lst)
+  (let* ([chars (string->list (trim (write-to-string lst)))]
+         [tweaked-chars (tweak-text chars #t #f)])
+    (display (list->string tweaked-chars))
+    (display #\newline)))
+    
+
+(define (game-eval expr)
+  (if (member (car expr) *commands*)
+      (eval expr)
+      'unknown-command))
 
 (define (game-repl)
   (let ([cmd (game-read)])
     (unless (eq? cmd 'quit)
       (game-print (game-eval cmd))
       (game-repl))))
+
 
