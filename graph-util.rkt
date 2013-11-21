@@ -5,6 +5,8 @@
 (provide graph->dot)
 (provide dot->png)
 
+(define *max-label* 30)
+
 (define (write-to-string v)
   (let ([p (open-output-string)])
     (display v p)
@@ -15,8 +17,8 @@
 
 (define (dot-label exp)
   (let ([full-name (write-to-string exp)])
-    (if (> (string-length full-name) 30)
-        (string-append (substring full-name 0 27) "...")
+    (if (> (string-length full-name) *max-label*)
+        (string-append (substring full-name 0 (- *max-label* 3)) "...")
         full-name)))
 
 (define (nodes->dot nodes)
@@ -53,4 +55,4 @@
 
 (define (graph->png nodes edges fname)
   (dot->png fname
-           (lambda () (graph->dot nodes edges))))
+            (lambda () (graph->dot nodes edges))))
