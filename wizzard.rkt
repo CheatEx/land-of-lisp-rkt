@@ -4,12 +4,16 @@
   '((living-room (you are in the living-room. a wizard is snoring loudly on the couch.))
     (garden (you are in a beautiful garden. there is a well in front of you.))
     (attic (you are in the attic. there is a giant welding torch in the corner.))))
+
+; TODO struct [where, direction, path]
 (define *edges* '((living-room (garden west door) (attic upstairs ladder))
                   (garden (living-room east door))
                   (attic (living-room downstairs ladder))))
 (define *objects* '(whiskey bucket frog chain))
 
 (define *location* 'living-room)
+
+; TODO struct [object, location]
 (define *object-locations* '((whiskey living-room)
                              (bucket living-room)
                              (chain garden)
@@ -27,6 +31,7 @@
          (descriptions (map describe-path edges)))
     (apply append descriptions)))
 
+; TODO use locations only
 (define (objects-at loc objs obj-locs)
     (define (there? obj)
       (eq? (cadr (assoc obj obj-locs)) loc))
@@ -45,9 +50,9 @@
           (describe-objects *location* *objects* *object-locations*)))
 
 (define (walk direction)
-  (let ((next (findf
+  (let ([next (findf
                (lambda (edge) (eq? direction (cadr edge)))
-               (cdr (assoc *location* *edges*)))))
+               (cdr (assoc *location* *edges*)))])
     (if next
         (begin
           (set! *location* (car next))
@@ -62,12 +67,6 @@
 
 (define (inventory)
   (objects-at 'body *objects* *object-locations*))
-
-(define (say-hello)
-  (display "Please enter your name")
-  (let ([name (read-line)])
-    (display "Nice to meet you, ")
-    (display name)))
 
 (define (game-read)
   (let* ([str (open-input-string (string-append "(" (read-line) ")"))]
