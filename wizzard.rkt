@@ -7,7 +7,7 @@
 
 (struct edge (destination direction path))
 
-(define *edges* '((living-room ,(edge 'garden 'west 'door) ,(edge 'attic 'upstairs 'ladder))
+(define *edges* `((living-room ,(edge 'garden 'west 'door) ,(edge 'attic 'upstairs 'ladder))
                   (garden ,(edge 'living-room 'east 'door))
                   (attic ,(edge 'living-room 'downstairs 'ladder))))
 
@@ -15,7 +15,6 @@
 
 (define *location* 'living-room)
 
-; TODO struct [object, location]
 (define *object-locations* '((whiskey living-room)
                              (bucket living-room)
                              (chain garden)
