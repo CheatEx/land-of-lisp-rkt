@@ -5,10 +5,12 @@
     (garden (you are in a beautiful garden. there is a well in front of you.))
     (attic (you are in the attic. there is a giant welding torch in the corner.))))
 
-; TODO struct [where, direction, path]
-(define *edges* '((living-room (garden west door) (attic upstairs ladder))
-                  (garden (living-room east door))
-                  (attic (living-room downstairs ladder))))
+(struct edge (destination direction path))
+
+(define *edges* '((living-room ,(edge 'garden 'west 'door) ,(edge 'attic 'upstairs 'ladder))
+                  (garden ,(edge 'living-room 'east 'door))
+                  (attic ,(edge 'living-room 'downstairs 'ladder))))
+
 (define *objects* '(whiskey bucket frog chain))
 
 (define *location* 'living-room)
@@ -26,7 +28,7 @@
 
 (define (describe-paths location all-edges)
   (define (describe-path edge)
-    `(there is a ,(caddr edge) going ,(cadr edge) from here.))
+    `(there is a ,(edge-path edge) going ,(edge-direction edge) from here.))
   (let* ((edges (cdr (assoc location all-edges)))
          (descriptions (map describe-path edges)))
     (apply append descriptions)))
@@ -51,11 +53,11 @@
 
 (define (walk direction)
   (let ([next (findf
-               (lambda (edge) (eq? direction (cadr edge)))
+               (lambda (edge) (eq? direction (edge-direction edge)))
                (cdr (assoc *location* *edges*)))])
     (if next
         (begin
-          (set! *location* (car next))
+          (set! *location* (edge-destination next))
           (look))
         '(you cant go there)
     )))
