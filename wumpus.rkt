@@ -12,6 +12,8 @@
 (define *worm-num* 3)
 (define *cop-odds* 15)
 
+(define *player-pos* null)
+
 (define (random-node)
   (+ 1 (random *node-num*)))
 
@@ -59,9 +61,9 @@
 
 (define (connect-with-bridges islands)
   (if (not (empty? (cdr islands)))
-    (append (edge-pair (caar islands) (caadr islands))
-            (connect-with-bridges (cdr islands)))
-    null))
+      (append (edge-pair (caar islands) (caadr islands))
+              (connect-with-bridges (cdr islands)))
+      null))
 
 ; TODO Handle sequence nodes and edges
 (define (connect-all-islands nodes edges)
@@ -71,7 +73,7 @@
   (let* ([nodes (sequence->list (in-range 1 (+ *node-num* 1)))]
          [edges (connect-all-islands nodes (make-edge-list))]
          [cops (filter (lambda (x) (equal? (random *cop-odds*) 0))
-                  edges)])
+                       edges)])
     (add-cops (edges->alist edges) cops)))
 
 (define (edges->alist edges)
@@ -83,5 +85,58 @@
          [assoc-set (set-map assoc-entry nodes)])
     (set->list assoc-set)))
 
-(define (add-cops a b)
-  null)
+(define (add-cops edge-alist edges-with-cops)
+  (map (lambda (edge-entry)
+         (let ([node1 (car edge-entry)]
+               [node1-edges (cdr edge-entry)])
+           (cons node1
+                 (map (lambda (edge)
+                        (let* ([node2 (car edge)]
+                               [edges-set (list->set (edge-pair node1 node2))]
+                               [cop-edges-set (list->set edges-with-cops)])
+                          (if (not (empty? (set-intersect edges-set cop-edges-set)))
+                              (list node2 'cops)
+                              edge)))
+                      node1-edges))))
+       edge-alist))
+
+(define (neighbors node edge-alist)
+  (map car (cdr (assoc node edge-alist))))
+
+(define (within-one a b edge-alist)
+  (member b (neighbors a edge-alist)))
+
+(define (within-two a b edge-alist)
+  (or (within-one a b edge-alist)
+      (for/or ((i (neighbors a edge-alist)))
+        (within-one i b edge-alist))
+      ))
+
+(define (make-city-nodes edge-alist)
+  (let ([wumpus (random-node)]
+        [glow-worms (map (lambda (x) (random-node)) (in-range 0 *worm-num*))])
+    (map
+     (lambda (n)
+       (append (list n)
+               (cond ((equal? n wumpus) '(wumpus))
+                     ((within-two n wumpus edge-alist) '(blood))
+                     (else '()))
+               (cond ((member n glow-worms) '(glow-worm))
+                     ((for/or ((worm glow-worms)) (within-one n worm edge-alist))
+                      '(lights))
+                     (else '()))
+               (cond ((for/or ((near-edge (assoc n edge-alist))) (not (null? (cdr near-edge)))) '(sirens))
+                     (else '())))
+       (in-range 1 (+ *node-num* 1))))))
+
+(define (find-empty-node)
+  (let ((x (random-node)))
+    (if (not (empty? (cdr (assoc x *congestion-city-nodes*))))
+        (find-empty-node)
+        x)))
+
+(define (new-game)
+  (set! *congestion-city-edges* (make-city-edges))
+  (set! *congestion-city-nodes* (make-city-nodes *congestion-city-edges*))
+  (set! *player-pos* (find-empty-node))
+  (set! *visited-nodes* (list *player-pos*)))
