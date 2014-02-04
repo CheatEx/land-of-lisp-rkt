@@ -1,5 +1,7 @@
 #lang racket
 
+(require (for-syntax syntax/parse))
+
 (define *nodes*
   '((living-room (you are in the living-room. a wizard is snoring loudly on the couch.))
     (garden (you are in a beautiful garden. there is a well in front of you.))
@@ -117,16 +119,23 @@
       (game-print (game-eval cmd))
       (game-repl))))
 
-(define-syntax-rule (action cmd subj obj place body ...)
-  (begin
-    (define (cmd subject object)
-      (if (and (eq? *location* place)
-               (eq? subject subj)
-               (eq? object obj)
-               (have? subj))
-          (begin body ...)
-          '(cant cmd like that.)))
-    (set! *commands* (cons (quote cmd) *commands*))))
+(define-syntax (action stx)
+  (syntax-parse stx
+    [(_ cmd:id subj:expr obj:expr place:expr body:expr ...+)
+     #:fail-when (identifier-binding #'cmd)
+                 (format "command '~a' already defined" (syntax->datum #'cmd))
+     #'(begin
+         (define (cmd subject object)
+           (if (and (eq? *location* place)
+                    (eq? subject subj)
+                    (eq? object obj)
+                    (have? subj))
+               (begin body ...)
+               '(cant cmd like that.)))
+          (set! *commands* (cons (quote cmd) *commands*)))]
+    [(_ cmd:id subj:expr obj:expr place:expr)
+     #:fail-when #t "missing action body"
+     #'()]))
 
 (define *chain-welded* #f)
 
